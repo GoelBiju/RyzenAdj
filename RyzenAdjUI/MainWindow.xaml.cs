@@ -8,6 +8,9 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 
+using RyzenAdjustApi;
+
+
 namespace RyzenAdjUI
 {
     internal enum AccentState
@@ -42,12 +45,15 @@ namespace RyzenAdjUI
         WCA_ACCENT_POLICY = 19
         // ...
     }
+
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
-        //APIInterop adjustApi;
+        AdjustApi adjustApi;
+        ryzen_access apiAccess;
 
         private string dir = System.IO.Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
 
@@ -63,8 +69,35 @@ namespace RyzenAdjUI
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             EnableBlur();
+
+            // Initialise the adjust api for use.
+            InitialiseApi();
+        }
+
+
+        private void InitialiseApi()
+        {
+            adjustApi = new AdjustApi();
+
             //
-            APIInterop adjustApi = new APIInterop();
+            apiAccess = adjustApi.GetRyzenAccess();
+            if (!apiAccess.use)
+            {
+                MessageBoxResult result = MessageBox.Show("Unable to initialise an API access object. Quiting application.", 
+                    "Ryzen Mobile - Adjustment Tool", MessageBoxButton.OK);
+                if (result == MessageBoxResult.OK)
+                {
+                    QuitApp();
+                }
+            }
+        }
+
+
+        private void QuitApp()
+        {
+            // Call to cleanup the api.
+            adjustApi.Cleanup();
+            Application.Current.Shutdown();
         }
 
         internal void EnableBlur()
@@ -213,6 +246,8 @@ namespace RyzenAdjUI
             //ApplySettings();
             //MessageBox.Show("Success!");
             //Application.Current.Shutdown();
+
+            Console.WriteLine(adjustApi.SetStapmLimit(apiAccess, 20000));
         }
 
         private void ApplySettings()
@@ -337,10 +372,7 @@ namespace RyzenAdjUI
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            // Call to cleanup the api.
-            //adjustApi.Cleanup();
-
-            Application.Current.Shutdown();
+            QuitApp();
         }
     }
 }
